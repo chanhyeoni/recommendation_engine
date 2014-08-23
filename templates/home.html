@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width">
+        <title>Recommender System</title>
+        <link href="{{ css_url }}" rel="stylesheet" type="text/css"></link>
+    </head>
+    <body>
+        <div class="container">
+            <section class="search box">
+                <form id="rec" action = "">
+                    <select id="products" data-placeholder="Products to choose" class="chosen-select" multiple>
+                    </select>
+                    <button class="btn" type="submit">Click Me!</button>
+                </form>
+            </section>
+
+            <section class="results">
+                <p class="lead">Recommended for you</p>
+                <figure class="visualization row">
+                    <div class="col-sm-6 col-1"></div>
+                    <div class="col-sm-6 col-2"></div>
+                </figure>
+            </section>
+
+            <pre id="result" class="language-javascript">
+                <code class="language-javascript"></code>
+            </pre>
+        </div>
+
+        <script src="{{ jquery_url }}"></script>
+        <script src="{{ highlight_url }}"></script>
+        <script src="{{ products_url }}"></script>
+        <script src="{{ js_url }}"></script>
+    </body>
+</html>
+
+
+<!--
+<script>
+    $(document).ready(function(){
+        $('#(the name of any id you hav') -> # must be followed by id name
+    });
+</script>
+-->
