@@ -254,12 +254,13 @@ def sentiment_analysis(aData, needed_param):
     grid_NB.fit(text_train.toarray(), ratings_train)
     best_NB_model = grid_NB.best_estimator_
     
+    
     # Logistic Regression (can run maximum entropy classifier if multiclass issue)
     param_LogReg = {'penalty':['l1', 'l2'], 'C': [0.0001, 0.001, 0.01, 0.1, 1],
                     'fit_intercept':[True, False]}
     logReg_Model = lm.LogisticRegression()
     grid_LogReg = gs.GridSearchCV(logReg_Model, param_LogReg)
-    grid_LogReg.fit(text_train.toarray(), ratings_train.toarray())
+    grid_LogReg.fit(text_train.toarray(), ratings_train)
     best_LogReg_model = grid_LogReg.best_estimator_
     
     # Decision Trees
@@ -305,8 +306,8 @@ def sentiment_analysis(aData, needed_param):
     # sgd_scores = grid_sgd.score(text_test.toarray(), ratings_test)    
     
     # find the best model
-    models = [best_NB_model, best_LogReg_model,  best_Tree_model]
-    scores = [nb_scores, logReg_scores,  tree_scores]
+    models = [ best_NB_model, best_Tree_model]
+    scores = [ nb_scores, tree_scores]
     best_estimator_AdaBoost = models[scores.index(max(scores))]
     
     # AdaBoost (base_estimator = Tree algorithm) 
@@ -328,8 +329,13 @@ def sentiment_analysis(aData, needed_param):
     best_randForest_model = grid_randForest.best_estimator_
     randForest_scores = grid_randForest.score(text_test.toarray(), ratings_test)
     
-    
-    bestModel = best_randForest_model
+    bestModel = None
+    if(adaBoost_scores > randForest_scores):
+        bestModel = best_AdaBoost_model
+        print "AdaBoost is the best model!"
+    else:
+        bestModel = best_randForest_model
+        print "Random Forest is the best model!"
     predicted_ratings = bestModel.predict(text_data.toarray())
     
     print "SCORES!!!"

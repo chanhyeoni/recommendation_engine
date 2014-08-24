@@ -45,7 +45,6 @@ def get_db_engine(dialect_driver = 'postgresql+psycopg2',  dbname='database'):
 
     return engine
 
-
 def write_sql(engine, ls_data, ls_tablename, exists_command = 'append'):
     """ write/update multiple tables at a time. the length of the ls_data and ls_tablename must be the same """
     if(len(ls_data)==len(ls_tablename)):
@@ -107,7 +106,7 @@ def graphlab_split_data(aData, frac):
     return train, test
 
 def inspect(afilter='classifier', parameter='sample_weight'):
-    """ helps you inspect some of the parameters """
+    """ helps you inspect some of the parameters and some options you may want  to choose"""
     import inspect
     from sklearn.utils.testing import all_estimators
     for name, clf in all_estimators(type_filter=afilter):
@@ -120,3 +119,13 @@ def clean(s):
         return " ".join(re.findall(r'\w+', s,flags = re.UNICODE | re.LOCALE)).lower()
     except:
         return " ".join(re.findall(r'\w+', "no_text",flags = re.UNICODE | re.LOCALE)).lower()
+
+def change_type(aData, typeChangeTo=int):
+    """ 
+        change the type of the data into appropariate one
+        when retrieving data from sql, some integer data is found out to be str
+        to retain the type, it is necessary to have this kind of function
+    
+    """
+    aData = aData.apply(lambda x: typeChangeTo(x))
+    return aData

@@ -64,15 +64,15 @@ class PySpark_Recommender(BaseModel):
         return results
     
 
-
 if __name__ == "__main__":
     # test part
     engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')
     
-    """
-    # textual analytics
+    """ BEST BUY """
     sql_command = 'bestbuy_data'
     aData_BB = pd.read_sql(sql=sql_command, con=engine)
+
+    # textual analytics
     param = {'comment': 'comment', 'ratings': 'rating', 'user_id':'reviewer', 'product_id':'sku'}
     model, ratings_data = rec.sentiment_analysis(aData_BB, param)
     ratings_data = ratings_data.sort(columns = 'user_id')
@@ -81,8 +81,14 @@ if __name__ == "__main__":
     aGraphlab_Model = Graphlab_Recommender(dataset = ratings_data)
     data = {'user': ['13579abcd'], 'products':[6955008], 'n':5}
     print aGraphlab_Model.predict(data)
-    """
     
+    
+    """ USA TODAY """
+    sql_command = 'USA_Today_data'
+    aData_USA = pd.read_sql(sql=sql_command, con=engine)
+    
+    
+    """ YAHOO """
     sql_command = 'yahoo_data'
     yahoo_data = pd.read_sql(sql=sql_command, con=engine)
     yahoo_data.sort(columns = 'user_id', ascending = True, inplace = True) # no pass by value
@@ -91,8 +97,11 @@ if __name__ == "__main__":
     aGraphlab_Model = Graphlab_Recommender(dataset = yahoo_data)
     print aGraphlab_Model.predict(data)
     
+    
+    """
     aPySpark_Model = PySpark_Recommender(filename='./data/yahoo music/train_0.txt')
     print aPySpark_Model.predict(data)
+    """
     
     # deployment
     yh = Yhat("chlee021690@gmail.com", "b36b987283a83e5e4d2814af6ef0eda9", "http://cloud.yhathq.com/")
