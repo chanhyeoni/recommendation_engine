@@ -10,6 +10,9 @@ The defined functions are used for munging the best buy dataset.
 
 """
 import pandas as pd
+import os, sys
+lib_path = os.path.abspath("/Users/chlee021690/Desktop/Programming/Python/Recommender System/recommendation engine/recommender scripts")
+sys.path.append(lib_path)
 import preprocessing as preproc
 reload(preproc)
 
@@ -30,12 +33,12 @@ def bestBuy_preprocess(reviews_data):
     reviews_data['submissionTime'] = reviews_data['submissionTime'].apply(lambda x: x.replace('T', ' '))
     reviews_data = reviews_data.where(pd.notnull(reviews_data), None)
     
-    #reviews_data.to_csv("./data/best_buy.csv", mode = 'a', index = False)
+    # reviews_data.to_csv("best_buy.csv", mode = 'a', index = False, header = True)
 
 def get_updated_BBData(new_reviews_data):
     """ get the updated Best Buy Data """
     bestBuy_preprocess(new_reviews_data)
-    aData_BB = pd.read_csv("./data/best_buy.csv")
+    aData_BB = pd.read_csv("best_buy.csv")
     aData_BB = aData_BB.where(pd.notnull(aData_BB), None)
     
     return aData_BB
@@ -46,7 +49,7 @@ if __name__ == '__main__':
     aData_Yahoo = preproc.getMultipleData_Static("./data/yahoo music/", filenames, "\t", 
                 colnames = ['user_id', 'product_id', 'ratings'],nRowsToRead=40000)
     """
-    aData_Yahoo = pd.read_csv("./data/yahoo_data.csv")    
+    aData_Yahoo = pd.read_csv("yahoo_data.csv")    
     # best buy data (it uses the api)
     api='http://api.remix.bestbuy.com/v1/reviews?format=json&pageSize=100&apiKey=q3yfbu6smh6bzydeqbjv9kas'
     new_reviews_BB = preproc.getData_API(api, 'reviews')

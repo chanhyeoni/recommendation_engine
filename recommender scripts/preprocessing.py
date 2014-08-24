@@ -43,7 +43,6 @@ def get_db_engine(dialect_driver = 'postgresql+psycopg2',  dbname='database'):
     url = URL(drivername=dialect_driver, username='chlee021690',  database = dbname)
     engine = create_engine(url)
 
-    # elif(dialoect_driver == 'mysql'):
     return engine
 
 

@@ -4,7 +4,6 @@ main.py
 loads the data into the database and uses that for calling some of the functions
 calls the recoomendation functions and deploys the model to yhat
 """
-import numpy as np
 import pandas as pd
 import recommender as rec
 import preprocessing as preproc
@@ -67,8 +66,11 @@ class PySpark_Recommender(BaseModel):
 
 
 if __name__ == "__main__":
-    # text part
+    # test part
     engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')
+    
+    """
+    # textual analytics
     sql_command = 'bestbuy_data'
     aData_BB = pd.read_sql(sql=sql_command, con=engine)
     param = {'comment': 'comment', 'ratings': 'rating', 'user_id':'reviewer', 'product_id':'sku'}
@@ -79,8 +81,8 @@ if __name__ == "__main__":
     aGraphlab_Model = Graphlab_Recommender(dataset = ratings_data)
     data = {'user': ['13579abcd'], 'products':[6955008], 'n':5}
     print aGraphlab_Model.predict(data)
+    """
     
-    engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')
     sql_command = 'yahoo_data'
     yahoo_data = pd.read_sql(sql=sql_command, con=engine)
     yahoo_data.sort(columns = 'user_id', ascending = True, inplace = True) # no pass by value
@@ -92,6 +94,7 @@ if __name__ == "__main__":
     aPySpark_Model = PySpark_Recommender(filename='./data/yahoo music/train_0.txt')
     print aPySpark_Model.predict(data)
     
+    # deployment
     yh = Yhat("chlee021690@gmail.com", "b36b987283a83e5e4d2814af6ef0eda9", "http://cloud.yhathq.com/")
     # yh.deploy("Recommender", Recommender, globals())
     # yh.deploy("Graphlab_Recommender", Graphlab_Recommender, globals())

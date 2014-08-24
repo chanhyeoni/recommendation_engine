@@ -217,7 +217,6 @@ def transformPrefs(prefs):
 
 """ ######################### TEXT ANALYTICS (SENTIMENT ANALYSIS) ######################### """ 
 
-
 def return_tfidf(text_data):
     """ 
         runs the sklearn tf-idf vecotrizer method to compute the table of the word vs. frequency 
@@ -319,7 +318,6 @@ def sentiment_analysis(aData, needed_param):
     adaBoost_scores = grid_AdaBoost.score(text_test.toarray(), ratings_test)
     
     # IMPORTANT : WRITE THIS IN OBJECT-ORIENTED or DYNAMIC PROGRAMMING WAY
-    
     
     # Random Forest
     param_RandForest = {'n_estimators':[10, 20, 30], 'criterion':['gini', 'entropy'],
