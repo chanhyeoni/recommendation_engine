@@ -116,9 +116,9 @@ def inspect(afilter='classifier', parameter='sample_weight'):
 def clean(s):
     '''clean some of the text that is unrecognized by the python console '''
     try:
-        return " ".join(re.findall(r'\w+', s,flags = re.UNICODE | re.LOCALE)).lower()
+        return " ".join(re.findall(r'\w+', s, flags = re.UNICODE | re.LOCALE)).lower()
     except:
-        return " ".join(re.findall(r'\w+', "no_text",flags = re.UNICODE | re.LOCALE)).lower()
+        return " ".join(re.findall(r'\w+', "no_text", flags = re.UNICODE | re.LOCALE)).lower()
 
 def change_type(aData, typeChangeTo=int):
     """ 

@@ -108,6 +108,26 @@ def recommendations_similarity(table_CF, user, products, n = 10, simfunc = sim_c
     
     return (ratings.index[ratings.index.isin(products)==False])
 
+def get_UserMatches(similarity,table_CF, user,n=5):
+    """ ranking the users based on how similar they are to the particular person """
+    similarity_table = similarity(table_CF)
+    similar_users = similarity_table[user]
+    # Sort the list so the highest scores appear at the top
+    similar_users = similar_users.order(ascending = False)
+    return similar_users[0:n]
+    
+def transformPrefs(prefs):
+    ''' transform the original dictionary to the dictionary whose key is now the item, and the value is the dictinary
+    of the costumer with the ratings '''
+    
+    result={}
+    for person in prefs:
+        for item in prefs[person]:
+            result.setdefault(item,{})
+            # Flip item and person
+            result[item][person]=prefs[person][item]
+    return result
+
 def spark_recommendations(filename,  user, products, separator = '\t', n = 10):
     """This method employs the collaborative filtering method from Apache Spark module (pyspark)"""
     """hyperparameter optimizations???? """
@@ -122,7 +142,7 @@ def spark_recommendations(filename,  user, products, separator = '\t', n = 10):
 
     return aModel, aRDDresults
 
-def graphlab_recommendations(aData, user, n = 10, cv_ratio = 0.7):
+def graphlab_recommendations(aData, user, needed_param, n = 10, cv_ratio = 0.7):
     """
         This method uses the recommendation methods from the GraphLab framework.
         For the matrix factorization model, the hyperparameter search method was included, and for doing that, an extra parameter was added
@@ -133,11 +153,11 @@ def graphlab_recommendations(aData, user, n = 10, cv_ratio = 0.7):
     aData = gl.SFrame(aData)
     train, test= preprocessing.graphlab_split_data(aData, cv_ratio)
     user = gl.SArray(user)
-    # get the column names
-    data_columns = aData.column_names()
-    user_id = data_columns[0]
-    product_id = data_columns[1]
-    values = data_columns[2]
+
+    user_id = needed_param['user_id']
+    print user_id
+    product_id = needed_param['product_id']
+    values = needed_param['ratings']
     
     """
     # hyperparameter tuning
@@ -168,14 +188,14 @@ def graphlab_recommendations(aData, user, n = 10, cv_ratio = 0.7):
                 sim_model = gl.recommender.create(observation_data = train, user_column = user_id, 
                                           item_column = product_id, target_column = values, method = aMethod, similarity_type = aSim)
                 models.append(sim_model)
-        
+    
     # generate results for models as well as the rmse results
     recommended = []
     rmse = []
     for model in models:
         aResult = model.recommend(users = user, k = n)
         recommended.append(aResult)
-        aRMSE = gl.evaluation.rmse(test['ratings'], model.score(test))
+        aRMSE = gl.evaluation.rmse(test[values], model.score(test))
         rmse.append(aRMSE)
         
     # create DataFrame
@@ -193,27 +213,9 @@ def graphlab_recommendations(aData, user, n = 10, cv_ratio = 0.7):
     
     results = results.sort('score', ascending = False)
 
-    return results.sort('score', ascending=False)
+    return results.sort('score', ascending=False), product_id
     
-def get_UserMatches(similarity,table_CF, user,n=5):
-    """ ranking the users based on how similar they are to the particular person """
-    similarity_table = similarity(table_CF)
-    similar_users = similarity_table[user]
-    # Sort the list so the highest scores appear at the top
-    similar_users = similar_users.order(ascending = False)
-    return similar_users[0:n]
-    
-def transformPrefs(prefs):
-    ''' transform the original dictionary to the dictionary whose key is now the item, and the value is the dictinary
-    of the costumer with the ratings '''
-    
-    result={}
-    for person in prefs:
-        for item in prefs[person]:
-            result.setdefault(item,{})
-            # Flip item and person
-            result[item][person]=prefs[person][item]
-    return result
+
 
 """ ######################### TEXT ANALYTICS (SENTIMENT ANALYSIS) ######################### """ 
 
@@ -222,7 +224,7 @@ def return_tfidf(text_data):
         runs the sklearn tf-idf vecotrizer method to compute the table of the word vs. frequency 
         the data should be such that it has text attributes plus the associated 
     """
-    aTFIDF_model = ml_feature_extract.text.TfidfVectorizer()
+    aTFIDF_model = ml_feature_extract.text.TfidfVectorizer(analyzer = 'word')
     text_data = text_data.apply(lambda x: x.lower())
     text_data = text_data.apply(lambda x: preproc.clean(x))
     aTFIDF_model.fit(text_data)
@@ -230,9 +232,20 @@ def return_tfidf(text_data):
     words = aTFIDF_model.get_feature_names()
 
     return text_data_tfidf, words
+    
+def generateModelNScores(model, param, data_train, data_test, target_train, target_test):
+    """ 
+        initializes the models using the GridSearch part and returns the best model 
+        as well as the scores of the model using the test dataset    
+    """
+    gridModel = gs.GridSearchCV(model, param)
+    gridModel.fit(data_train, target_train)
+    best_model = gridModel.best_estimator_
+    scores = gridModel.score(data_test, target_test)
+    
+    return best_model, scores
 
-
-def sentiment_analysis(aData, needed_param):
+def sentiment_analysis_classifier(aData, needed_param):
     
     text_data = aData[needed_param['comment']]
     ratings = aData[needed_param['ratings']]  
@@ -241,47 +254,71 @@ def sentiment_analysis(aData, needed_param):
     text_data, words = return_tfidf(text_data)
     # you may want to add some parsing methods here
     
-
     # cross-validation
     text_train, text_test, ratings_train, ratings_test = cv.train_test_split(text_data, ratings, test_size = 0.3)
     
-    
+    # create emptly list of models and scores
+    models = []
+    scores = []    
     
     # Naive Bayes
     param_NB = {'alpha': [0.1, 0.11, 0.15, 0.17, 0.2], 'fit_prior': [True, False]}
     nb_Model = bayes.MultinomialNB()
-    grid_NB = gs.GridSearchCV(nb_Model, param_NB)
-    grid_NB.fit(text_train.toarray(), ratings_train)
-    best_NB_model = grid_NB.best_estimator_
+    best_NB, scores_NB = generateModelNScores(nb_Model, param_NB, 
+                                              text_train.toarray(), text_test.toarray(),
+                                            ratings_train, ratings_test)
+    models.append(best_NB)
+    scores.append(scores_NB)
+    print "finished NB"
     
+    # Decision Trees
+    param_Tree = {'criterion':['gini', 'entropy'], 'splitter':['best', 'random'],
+                  'max_features':['auto', 'sqrt', 'log2']}
+    tree_Model = tree.DecisionTreeClassifier()
+    best_tree, scores_tree = generateModelNScores(tree_Model, param_Tree, 
+                                              text_train.toarray(), text_test.toarray(),
+                                            ratings_train, ratings_test)
+    models.append(best_tree)
+    scores.append(scores_tree)    
+    print "finished tree"
+    
+    # Support Vector Machines
+    # extremely slow --> you have to implement this in other framework
+    # adding degrees will extremely slow down 
+    param_SVC = {'kernel':['rbf']}
+    svc_Model = svm.SVC()
+    best_SVC, scores_SVC = generateModelNScores(svc_Model, param_SVC, 
+                                    text_train.toarray(), text_test.toarray(),
+                                    ratings_train, ratings_test)
+    models.append(best_SVC)
+    scores.append(scores_SVC)    
+    print "finished svm"
+    
+    # find the best model among the AdaBoost-compatible models
+    best_estimator_AdaBoost = models[scores.index(max(scores))]
+    print best_estimator_AdaBoost
+    
+    # AdaBoost (base_estimator = Tree algorithm) 
+    param_adaBoost = {'algorithm':['SAMME', 'SAMME.R']}
+    adaBoost_model = ensemble.AdaBoostClassifier(best_estimator_AdaBoost)
+    best_AdaBoost, scores_AdaBoost = generateModelNScores(adaBoost_model, param_adaBoost, 
+                                              text_train.toarray(), text_test.toarray(),
+                                            ratings_train, ratings_test)
+    models.append(best_AdaBoost)
+    scores.append(scores_AdaBoost)
+    print "finished boosting"
     
     # Logistic Regression (can run maximum entropy classifier if multiclass issue)
     param_LogReg = {'penalty':['l1', 'l2'], 'C': [0.0001, 0.001, 0.01, 0.1, 1],
                     'fit_intercept':[True, False]}
     logReg_Model = lm.LogisticRegression()
-    grid_LogReg = gs.GridSearchCV(logReg_Model, param_LogReg)
-    grid_LogReg.fit(text_train.toarray(), ratings_train)
-    best_LogReg_model = grid_LogReg.best_estimator_
-    
-    # Decision Trees
-    param_Tree = {'criterion':['gini', 'entropy'], 'splitter':['best', 'random'], 
-    'max_features':['auto', 'sqrt', 'log2']}
-    tree_Model = tree.DecisionTreeClassifier()
-    grid_Tree = gs.GridSearchCV(tree_Model, param_Tree)
-    grid_Tree.fit(text_train.toarray(), ratings_train)
-    best_Tree_model = grid_Tree.best_estimator_
-    
-    '''
-    # Support Vector Machines
-    # extremely slow --> you have to implement this in other framework
-    # adding degrees will extremely slow down 
-    param_SVC = {'C': [1], 'kernel':['poly', 'rbf']}
-    svc_Model = svm.SVC()
-    grid_SVC = gs.RamdomizedSearchCV(svc_Model, param_SVC, n_jobs = 2)
-    grid_SVC.fit(text_train.toarray(), ratings_train)
-    best_SVC_model = grid_SVC.best_estimator_
-    '''
-    
+    best_logReg, scores_logReg = generateModelNScores(logReg_Model, param_LogReg, 
+                                              text_train.toarray(), text_test.toarray(),
+                                            ratings_train, ratings_test)
+    models.append(best_logReg)
+    scores.append(scores_logReg)
+    print "finished logistic"
+        
     """
     # SGDClassifier, No!, since this is a linear classifier
     # took out the hinge part since they are used for SVM
@@ -289,54 +326,30 @@ def sentiment_analysis(aData, needed_param):
     param_SGD = {'loss':['log', 'modified_huber'],
                  'penalty':['l1', 'l2', 'elasticnet'], 'learning_rate':['constant', 'optimal'], 'eta0':[ 0.1, 1.0]}
     sgd_Model = lm.SGDClassifier()
-    grid_sgd = gs.GridSearchCV(sgd_Model, param_SGD)
-    grid_sgd.fit(text_train.toarray(), ratings_train)
-    best_SGD_model = grid_sgd.best_estimator_
+    best_SGD, scores_SGD = generateModelNScores(sgd_Model, param_SGD, 
+                                    text_train.toarray(), text_test.toarray(),
+                                    ratings_train, ratings_test)
+    models.append(best_SGD)
+    scores.append(scores_SGD)
+    print "finished SGD"
     """
-    
-    # Perceptron
-    # RidgeCV
-    # latent Semantic Analysis
-    
-    # estimate the accuracy using the test set
-    nb_scores = grid_NB.score(text_test.toarray(), ratings_test)
-    logReg_scores = grid_LogReg.score(text_test.toarray(), ratings_test)
-    tree_scores = grid_Tree.score(text_test.toarray(), ratings_test)
-    # svc_scores = grid_SVC.score(pd.DataFrame(text_test.toarray()), ratings_test)
-    # sgd_scores = grid_sgd.score(text_test.toarray(), ratings_test)    
-    
-    # find the best model
-    models = [ best_NB_model, best_Tree_model]
-    scores = [ nb_scores, tree_scores]
-    best_estimator_AdaBoost = models[scores.index(max(scores))]
-    
-    # AdaBoost (base_estimator = Tree algorithm) 
-    param_adaBoost = {'algorithm':['SAMME', 'SAMME.R']}
-    adaBoost_model = ensemble.AdaBoostClassifier(best_estimator_AdaBoost)
-    grid_AdaBoost = gs.GridSearchCV(adaBoost_model, param_adaBoost)
-    grid_AdaBoost.fit(text_train.toarray(), ratings_train)
-    best_AdaBoost_model = grid_AdaBoost.best_estimator_
-    adaBoost_scores = grid_AdaBoost.score(text_test.toarray(), ratings_test)
-    
-    # IMPORTANT : WRITE THIS IN OBJECT-ORIENTED or DYNAMIC PROGRAMMING WAY
-    
+        
     # Random Forest
     param_RandForest = {'n_estimators':[10, 20, 30], 'criterion':['gini', 'entropy'],
                         'max_features':['auto', 'sqrt', 'log2']}
     randForest_Model = ensemble.RandomForestClassifier()
-    grid_randForest = gs.GridSearchCV(randForest_Model, param_RandForest)
-    grid_randForest.fit(text_train.toarray(), ratings_train)
-    best_randForest_model = grid_randForest.best_estimator_
-    randForest_scores = grid_randForest.score(text_test.toarray(), ratings_test)
+    best_randForest, scores_randForest = generateModelNScores(randForest_Model, param_RandForest, 
+                                                              text_train.toarray(), text_test.toarray(),
+                                                              ratings_train, ratings_test)
+                            
+    models.append(best_randForest)
+    scores.append(scores_randForest)
+    print "finished random forest"
     
-    bestModel = None
-    if(adaBoost_scores > randForest_scores):
-        bestModel = best_AdaBoost_model
-        print "AdaBoost is the best model!"
-    else:
-        bestModel = best_randForest_model
-        print "Random Forest is the best model!"
+    bestModel =  models[scores.index(max(scores))]
     predicted_ratings = bestModel.predict(text_data.toarray())
+    print "Models!"
+    print bestModel
     
     print "SCORES!!!"
     print (float(sum(ratings==predicted_ratings))/float(len(predicted_ratings)))

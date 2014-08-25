@@ -8,7 +8,7 @@ app = Flask(__name__)
 def home():
     if request.method == 'POST':
         yh = Yhat("chlee021690@gmail.com", "b36b987283a83e5e4d2814af6ef0eda9", "http://cloud.yhathq.com/")
-        recommender_name = "Graphlab_Recommender"
+        recommender_name = "Final_Recommender"
         data = {"user" : request.json['user'], "products" : request.json['products'], "n": request.json['n']}
         pred = yh.predict(recommender_name, data)
         return Response(json.dumps(pred), mimetype='application/json')
