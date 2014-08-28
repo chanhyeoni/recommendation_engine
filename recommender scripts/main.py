@@ -18,8 +18,6 @@ reload(data_write)
 reload(preproc)
 reload(rec)
 
-
-
 """ deploy to yhat """
 class Recommender(BaseModel):        
     """ uses the similarity-based recommender model """

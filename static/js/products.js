@@ -1,14 +1,11 @@
 var products = []
 $.ajax({
     type: "get",
-    url: "products_data.csv",
-    async: true,
-    dataType: 'text',
-    success: function(d) {
-        products = $.csv2Array(csvd);
-    },
-    complete: function () {
-        // call a function on complete 
+    url: "./static/js/products_data.csv",
+    async: false,
+    dataType:'text',
+    success: function(csvd) {
+        products = csvd.split("\n");
     }
 });
 

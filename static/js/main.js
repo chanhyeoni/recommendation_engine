@@ -28,8 +28,10 @@ var recommendation = {
         }
     },
     submit: function(){
+        var user = $("#users").val();
         var chosen_products = $("#products").val();
         var payload = {
+            user: user,
             products: chosen_products,
             n: 20
         };
@@ -37,8 +39,8 @@ var recommendation = {
         $.ajax({
             type: "POST",
             url: "/",
-            data: JSON.stringify(payload),
-            contentType: "application/json",
+            data: JSON.stringify(payload), // payload is already JSON object
+            contentType: "application/json", // the type of the data to be sent to the server
             success: function(d) {
                 recommendation.reset();
                 $("#result").show().children('code').text(JSON.stringify(d, null, 2));

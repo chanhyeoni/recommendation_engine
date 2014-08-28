@@ -30,7 +30,7 @@ def home():
         aData.to_csv("./static/js/products_data.csv", index = False)
         
         css_url = url_for('static', filename='css/main.css')
-        jquery_url = url_for('static', filename='js/jquery-1.10.2.min.js')
+        jquery_url = url_for('static', filename='js/jquery-1.11.1.js')
         products_url = url_for('static', filename='js/products.js')
         highlight_url = url_for('static', filename='js/highlight.js')
         js_url = url_for('static', filename='js/main.js')
