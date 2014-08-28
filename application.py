@@ -2,7 +2,16 @@
 
 from flask import Flask, request, render_template, url_for, Response, json
 from yhat import Yhat
+import os, sys
+import pandas as pd
+lib_path = os.path.abspath("/Users/chlee021690/Desktop/Programming/Python/Recommender System/recommendation engine/recommender scripts")
+sys.path.append(lib_path)
+import preprocessing as preproc
+reload(preproc)
+
+# create the flask app as well as the SQLalchemy database associated with the app
 app = Flask(__name__)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -15,6 +24,11 @@ def home():
     else:
         # if it is GET method, you just need to render the homepage part
         # defines the jQuery pages in order to render the page in home.html template
+        engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')
+        sql_command = 'SELECT product_id FROM bestbuy_data'
+        aData = pd.read_sql(sql=sql_command, con=engine)
+        aData.to_csv("./static/js/products_data.csv", index = False)
+        
         css_url = url_for('static', filename='css/main.css')
         jquery_url = url_for('static', filename='js/jquery-1.10.2.min.js')
         products_url = url_for('static', filename='js/products.js')

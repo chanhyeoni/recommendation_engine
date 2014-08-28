@@ -17,10 +17,9 @@ sys.path.append(lib_path)
 import preprocessing as preproc
 reload(preproc)
 
-def write_bestbuyData(engine):
+def write_bestbuy_review_data(engine, api = 'http://api.remix.bestbuy.com/v1/reviews?format=json&pageSize=100&apiKey=q3yfbu6smh6bzydeqbjv9kas'):
     """ preprocess the "NEW" Best Buy review data frame """
     # delete the unnecesssary records
-    api='http://api.remix.bestbuy.com/v1/reviews?format=json&pageSize=100&apiKey=q3yfbu6smh6bzydeqbjv9kas'
     reviews_data = preproc.getData_API(api, 'reviews')
     if('aboutMe' in reviews_data.columns):
         del reviews_data['aboutMe']
@@ -38,12 +37,18 @@ def write_bestbuyData(engine):
     reviews_data['rating'] = preproc.change_type(reviews_data['rating'], float)
     reviews_data.to_sql('bestbuy_data', con = engine, index = False, if_exists = 'append')
 
+def write_bestbuy_product_data(engine, api = 'http://api.remix.bestbuy.com/v1/products?format=json&pageSize=100&apiKey=q3yfbu6smh6bzydeqbjv9kas'):
+    """ preprocess the "NEW" Best Buy review data frame """
+    # delete the unnecesssary records
+    products_data = preproc.getData_API(api, 'products')
+    del products_data['videoChapters']
+    del products_data['videoLanguages']
+    products_data = products_data.where(pd.notnull(products_data), None)
+    print products_data
+    products_data.to_sql('bestbuy_products_data', con = engine, index = False, if_exists = 'replace')
 
 def obtain_USAToday_APIs(api="http://api.usatoday.com/open/reviews/music?count=1000&api_key=mhph6f4afgvetbqtex4rs22a"):
-    """ 
-        uses the USA Today API in order to extract the list of the sub-APIs for music reviews
-        
-    """
+    """ uses the USA Today API in order to extract the list of the sub-APIs for music reviews """
     import requests
     r = requests.get(api)
     jsonfile = r.json()    
@@ -69,13 +74,13 @@ def write_USAData(engine, parameter):
     aData_USA['Rating']= aData_USA ['Rating'].where(pd.notnull(aData_USA['Rating']), 0)
     aData_USA['Rating'] = preproc.change_type(aData_USA['Rating'], float)
     aData_USA.to_sql(name = 'USA_Today_data', con = engine, index = False, if_exists = 'append')
-    
 
-if __name__ == '__main__':
+def update_data():
     # configure the SQL engines
     # to use mysql, you need to go thorugh this grant priveliges steop
     engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')   
-    write_bestbuyData(engine)
-    # write_USAData(engine, 'List of available reviews from 2007...')
+    write_bestbuy_review_data(engine)
+    write_USAData(engine, 'List of available reviews from 2007...')
+    # write_bestbuy_product_data(engine)
 
     
