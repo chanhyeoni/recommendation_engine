@@ -1,9 +1,9 @@
-## Recommendation Engines
+## Recommendation Engine
 
+## Introduction
+This the recommendation engine using the Best Buy dataset. Still in development mode.
 
 ### Quickstart
-
 ```bash
-$ pip install -r requirements.txt
-$ python app.py
+$ python application.py
 ```
