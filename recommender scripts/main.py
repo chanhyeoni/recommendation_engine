@@ -4,14 +4,11 @@ main.py
 loads the data into the database and uses that for calling some of the functions
 calls the recoomendation functions and deploys the model to yhat
 """
-import os, sys
 import random
 import pandas as pd
 import recommender as rec
 import preprocessing as preproc
 import sentiment_analysis as sentiment
-lib_path = os.path.abspath("/Users/chlee021690/Desktop/Programming/Python/Recommender System/recommendation engine/data")
-sys.path.append(lib_path)
 import write_data as data_write
 from yhat import Yhat,  BaseModel
 reload(data_write)
@@ -78,21 +75,21 @@ class Final_Recommender(BaseModel):
         # this is pass by reference
         # or rather than randomly shuffling, we can do some ranking mechanism
         
-        return results
+        return {'products': results}
         
 if __name__ == "__main__":
     # update the data
-    # data_write.update_data()
+    data_write.update_data()
     
     # get the engines
     engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')
-    sql_command = 'bestbuy_data'
+    sql_command = 'USA_Today_data'
     aData = pd.read_sql(sql=sql_command, con=engine)
-        
+    
     """ BEST BUY """
     bestbuy_data = aData
-    data = {'user': ['13579abcd'], 'products':[6955008], 'n':5}
-    param = {'comment': 'comment', 'ratings': 'rating', 'user_id':'reviewer', 'product_id':'product_id'}
+    data = {'user': '13579abcd', 'products':6955008, 'n':5}
+    param = {'comment': 'comment', 'ratings': 'rating', 'user_id':'reviewer', 'item_id':'product_id'}
     
     # textual analytics + CF method
     predicted_ratings_data = sentiment.sentiment_analysis_unsupervised(bestbuy_data, param)    
@@ -137,7 +134,6 @@ if __name__ == "__main__":
     data = {'user': ['Edna Gundersen'], 'products':[123901],  'n':10} 
     print aGraphlab_Model.predict(data)
     '''
-    
     # deployment
     yh = Yhat("chlee021690@gmail.com", "b36b987283a83e5e4d2814af6ef0eda9", "http://cloud.yhathq.com/")
     yh.deploy("Final_Recommender", Final_Recommender, globals()) 

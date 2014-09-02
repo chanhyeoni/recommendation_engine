@@ -14,7 +14,6 @@ the module for the sentiment analysis
     - still in development version
 
 """
-import os, sys
 import pandas as pd
 import sklearn.feature_extraction as ml_feature_extract
 import sklearn.linear_model as lm
@@ -26,7 +25,6 @@ import sklearn.cross_validation as cv
 import sklearn.ensemble as ensemble
 import textblob as tb
 import preprocessing as preproc
-
 
 def return_tfidf(text_data):
     """ runs the sklearn tf-idf vecotrizer method to compute the table of the word vs. frequency 
@@ -162,22 +160,14 @@ def sentiment_analysis_supervised(aData, needed_param):
 def give_scores(aText):
     """ uses the textblob object in order to quantify the polarity of the reviews """
     polarity = tb.TextBlob(aText).sentiment.polarity
-    
-    if(polarity >= 0.6): 
-        # may have to use ml technique in order to come up with the best threshold value
-        polarity = 5
-    else:
-        polarity = 1
+
     return polarity
     
 def sentiment_analysis_unsupervised(aDataset, needed_param):
     """ uses the unsupervised sentiment analysis using the textblob source code """
     text_data = aDataset[needed_param['comment']]
     predicted_scores = text_data.apply(lambda x: give_scores(x))
-    aData = aDataset[[needed_param['user_id'], needed_param['product_id']]]
+    aData = aDataset[[needed_param['user_id'], needed_param['item_id']]]
     aData[needed_param['ratings']] = predicted_scores
     
     return aData
-
-
-    

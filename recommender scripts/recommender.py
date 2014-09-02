@@ -11,7 +11,6 @@ import preprocessing as preproc
 # for adding the spark module, you need this path
 os.environ['SPARK_HOME']="/Users/chlee021690/Desktop/Programming/spark"
 sys.path.append("/Users/chlee021690/Desktop/Programming/spark/python/")
-
 import pyspark
 import sklearn.metrics as ml_metrics
 import graphlab as gl
@@ -82,10 +81,8 @@ def sim_pearson(table_CF):
     return r
 
 def recommendations_similarity(aData, needed_param, user, products, n = 10, simfunc = sim_cosine):
-    """ 
-        recommends the top n products based upon the simlarity data frame (sim_measures_table)
-        in test demo, products MUST be the products that a particular user has rated the highest   
-    """
+    """ recommends the top n products based upon the simlarity data frame (sim_measures_table)
+        in test demo, products MUST be the products that a particular user has rated the highest"""
     table_CF = preproc.make_CF_table(aData, needed_param)
     sim_measures_table = simfunc(table_CF)    
     
@@ -110,7 +107,6 @@ def get_UserMatches(similarity,table_CF, user,n=5):
 def transformPrefs(prefs):
     ''' transform the original dictionary to the dictionary whose key is now the item, and the value is the dictinary
     of the costumer with the ratings '''
-    
     result={}
     for person in prefs:
         for item in prefs[person]:
@@ -121,7 +117,6 @@ def transformPrefs(prefs):
 
 def spark_recommendations(filename,  user, products, separator = '\t', n = 10):
     """This method employs the collaborative filtering method from Apache Spark module (pyspark)"""
-    """hyperparameter optimizations???? """
     sc = pyspark.SparkContext('loc', 'pyspark_rec')
     aData = sc.textFile(filename)
     data = aData.map(lambda line: np.array([float(x) for x in line.split(separator)])) 
@@ -141,28 +136,27 @@ def graphlab_recommendations(aData, user, needed_param, n = 10, cv_ratio = 0.7):
     """
     # change the data into SFrame and the user data into SArray
     import preprocessing
+    aData.rename(columns = {needed_param['user_id']:'user_id', needed_param['item_id']: 'item_id', 
+                            needed_param['ratings']: 'ratings'}, inplace = True)
     aData = gl.SFrame(aData)
     train, test= preprocessing.graphlab_split_data(aData, cv_ratio)
-    user = gl.SArray(user)
-
-    user_id = needed_param['user_id']
-    print user_id
-    product_id = needed_param['product_id']
-    values = needed_param['ratings']
+    user = gl.SArray([user])
     
     # make models
     methods = ['matrix_factorization', 'linear_model', 'item_similarity', 'popularity', 'item_means']
     sim_type = ['jaccard', 'cosine', 'pearson']
     models = []
     for aMethod in methods:
+        print aMethod
         if(aMethod != 'item_similarity'):
-            model = gl.recommender.create(observation_data = train, user_column = user_id, 
-                                          item_column = product_id, target_column = values, method = aMethod)
+            model = gl.recommender.create(observation_data = train, user_id = 'user_id', 
+                                          item_id = 'item_id', target = 'ratings', method = aMethod)
             models.append(model)
         else:
             for aSim in sim_type:
-                sim_model = gl.recommender.create(observation_data = train, user_column = user_id, 
-                                          item_column = product_id, target_column = values, method = aMethod, similarity_type = aSim)
+                print aSim
+                sim_model = gl.recommender.create(observation_data = train, user_id = 'user_id', 
+                                                  item_id = 'item_id', target = 'ratings', method = aMethod, similarity_type = aSim)
                 models.append(sim_model)
     
     # generate results for models as well as the rmse results
@@ -171,7 +165,7 @@ def graphlab_recommendations(aData, user, needed_param, n = 10, cv_ratio = 0.7):
     for model in models:
         aResult = model.recommend(users = user, k = n)
         recommended.append(aResult)
-        aRMSE = gl.evaluation.rmse(test[values], model.score(test))
+        aRMSE = gl.evaluation.rmse(test['ratings'], model.predict(test))
         rmse.append(aRMSE)
         
     # create DataFrame
@@ -189,4 +183,4 @@ def graphlab_recommendations(aData, user, needed_param, n = 10, cv_ratio = 0.7):
     
     results = results.sort('score', ascending = False)
 
-    return results.sort('score', ascending=False), product_id
+    return results.sort('score', ascending=False), 'item_id'

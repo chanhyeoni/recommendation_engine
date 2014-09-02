@@ -12,30 +12,34 @@ reload(preproc)
 # create the flask app as well as the SQLalchemy database associated with the app
 app = Flask(__name__)
 
-
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
         yh = Yhat("chlee021690@gmail.com", "b36b987283a83e5e4d2814af6ef0eda9", "http://cloud.yhathq.com/")
         recommender_name = "Final_Recommender"
         data = {"user" : request.json['user'], "products" : request.json['products'], "n": request.json['n']}
-        pred = yh.predict(recommender_name, data)
+        pred = yh.predict(recommender_name, data) # returns the dictionary
         return Response(json.dumps(pred), mimetype='application/json')
     else:
         # if it is GET method, you just need to render the homepage part
         # defines the jQuery pages in order to render the page in home.html template
-        engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')
-        sql_command = 'SELECT product_id FROM bestbuy_data'
-        aData = pd.read_sql(sql=sql_command, con=engine)
-        aData.to_csv("./static/js/products_data.csv", index = False)
-        
         css_url = url_for('static', filename='css/main.css')
         jquery_url = url_for('static', filename='js/jquery-1.11.1.js')
+        # prodcuts_url = aData
         products_url = url_for('static', filename='js/products.js')
         highlight_url = url_for('static', filename='js/highlight.js')
-        js_url = url_for('static', filename='js/main.js')
+        main_url = url_for('static', filename='js/main.js')
         return render_template('home.html', css_url=css_url,jquery_url=jquery_url, products_url=products_url,
-            js_url=js_url, highlight_url=highlight_url)
+            main_url=main_url, highlight_url=highlight_url)
 
 if __name__ == '__main__':
+    # define the dataset
+    engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')
+    sql_command = 'SELECT product_id FROM bestbuy_data'
+    aData = pd.read_sql(sql=sql_command, con=engine)
+    aData.to_csv("./static/js/products_data.csv", index = False)  
+    # run the application  
     app.run(debug=True) # must be turned off for the production mode
+
+
+

@@ -4,16 +4,10 @@
 write_data.py
 
 A backend script to wrtie the data and load the data into the database
-
 There are some costumized functions to deal with a different kind of dataset. Here
 The defined functions are used for munging the best buy dataset.
-
 """
 import pandas as pd
-import os, sys
-# to use the preprocessing script
-lib_path = os.path.abspath("/Users/chlee021690/Desktop/Programming/Python/Recommender System/recommendation engine/recommender scripts")
-sys.path.append(lib_path)
 import preprocessing as preproc
 reload(preproc)
 
@@ -45,7 +39,8 @@ def write_bestbuy_product_data(engine, api = 'http://api.remix.bestbuy.com/v1/pr
     del products_data['videoLanguages']
     products_data = products_data.where(pd.notnull(products_data), None)
     print products_data
-    products_data.to_sql('bestbuy_products_data', con = engine, index = False, if_exists = 'replace')
+    print products_data.columns
+    # products_data.to_sql('bestbuy_products_data', con = engine, index = False, if_exists = 'replace')
 
 def obtain_USAToday_APIs(api="http://api.usatoday.com/open/reviews/music?count=1000&api_key=mhph6f4afgvetbqtex4rs22a"):
     """ uses the USA Today API in order to extract the list of the sub-APIs for music reviews """
@@ -64,7 +59,6 @@ def obtain_USAToday_APIs(api="http://api.usatoday.com/open/reviews/music?count=1
             continue
         else:
             api_dict[i] = new_one
-    
     return api_dict
 
 def write_USAData(engine, parameter):
@@ -81,6 +75,4 @@ def update_data():
     engine = preproc.get_db_engine(dialect_driver = 'mysql', dbname = 'recommender')   
     write_bestbuy_review_data(engine)
     write_USAData(engine, 'List of available reviews from 2007...')
-    # write_bestbuy_product_data(engine)
-
-    
+    # write_bestbuy_product_data(engine)    

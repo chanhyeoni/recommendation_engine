@@ -115,7 +115,6 @@ def clean(s):
 
 def change_type(aData, typeChangeTo=int):
     """ change the type of the data into appropariate one when retrieving data from sql, some integer 
-        data is found out to be str to retain the type, it is necessary to have this kind of function
-    """
+        data is found out to be str to retain the type, it is necessary to have this kind of function """
     aData = aData.apply(lambda x: typeChangeTo(x))
     return aData
